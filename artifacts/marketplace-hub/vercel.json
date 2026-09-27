@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "PORT=23939 BASE_PATH=/ pnpm --filter @workspace/marketplace-hub run build",
+  "outputDirectory": "artifacts/marketplace-hub/dist/public",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

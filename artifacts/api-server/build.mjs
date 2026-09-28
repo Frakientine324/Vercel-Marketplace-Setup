@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -103,6 +104,24 @@ async function buildAll() {
     ],
     sourcemap: "linked",
     plugins: [
+      {
+        name: "resolve-typescript-js-imports",
+        setup(build) {
+          build.onResolve({ filter: /^\.\.?\// }, (args) => {
+            if (!args.path.endsWith(".js")) return undefined;
+
+            const basePath = path.resolve(args.resolveDir, args.path.slice(0, -3));
+            const candidates = [
+              `${basePath}.ts`,
+              `${basePath}.tsx`,
+              path.join(basePath, "index.ts"),
+              path.join(basePath, "index.tsx"),
+            ];
+            const resolvedPath = candidates.find((candidate) => existsSync(candidate));
+            return resolvedPath ? { path: resolvedPath } : undefined;
+          });
+        },
+      },
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],

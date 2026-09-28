@@ -1,7 +1,7 @@
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, marketplacePosts, type NewMarketplacePost, type StoredMedia } from "@workspace/db";
-import { logger } from "../lib/logger";
+import { logger } from "../lib/logger.js";
 
 type PostStatus = "pending" | "approved" | "rejected";
 

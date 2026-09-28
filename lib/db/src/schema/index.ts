@@ -1,1 +1,1 @@
-export * from "./marketplacePosts";
+export * from "./marketplacePosts.js";

@@ -1,6 +1,6 @@
-import app from "./app";
-import { logger } from "./lib/logger";
-import { registerTelegramWebhook } from "./routes/marketplace";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
+import { registerTelegramWebhook } from "./routes/marketplace.js";
 
 const rawPort = process.env["PORT"];
 

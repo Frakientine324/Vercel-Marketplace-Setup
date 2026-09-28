@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
+import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage.js";
 
 const router: IRouter = Router();
 const storage = new ObjectStorageService();

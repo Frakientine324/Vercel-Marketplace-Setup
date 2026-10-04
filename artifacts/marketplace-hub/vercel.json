@@ -1,4 +1,5 @@
 {
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm run build",
   "outputDirectory": "dist/public",
   "rewrites": [
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }

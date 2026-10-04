@@ -1,0 +1,1 @@
+- [Marketplace access control](marketplace-access-control.md) — require sign-in for posts and uploads; derive seller identity server-side and reserve moderation for the configured owner account.

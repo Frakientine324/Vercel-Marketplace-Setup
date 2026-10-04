@@ -10,7 +10,129 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: marketplace
+    description: Community marketplace operations
+  - name: storage
+    description: Media upload operations
+  - name: locations
+    description: Philippine location search operations
+  - name: auth
+    description: Browser authentication operations
 paths:
+  /auth/user:
+    get:
+      tags: [auth]
+      operationId: getCurrentAuthUser
+      summary: Get the current authenticated user
+      responses:
+        "200":
+          description: Auth status resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the authentication provider
+  /callback:
+    get:
+      tags: [auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        "302":
+          description: Redirect after authentication
+  /logout:
+    get:
+      tags: [auth]
+      operationId: logoutBrowserSession
+      summary: Clear the browser session
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+            default: /
+      responses:
+        "302":
+          description: Redirect to the authentication provider
+  /mobile-auth/token-exchange:
+    post:
+      tags: [auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile login code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Invalid authentication code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Token exchange failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /mobile-auth/logout:
+    post:
+      tags: [auth]
+      operationId: logoutMobileSession
+      summary: Clear a mobile session
+      responses:
+        "200":
+          description: Logout processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
   /healthz:
     get:
       operationId: healthCheck
@@ -24,8 +146,244 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /locations/search:
+    get:
+      operationId: searchLocations
+      tags: [locations]
+      summary: Search Philippine cities, municipalities, and barangays
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [City, Municipality, Barangay, Locality]
+        - name: parent
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching Philippine locations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [locations]
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LocationRecord"
+        "400":
+          description: Invalid location level
+  /marketplace/posts:
+    get:
+      operationId: listMarketplacePosts
+      tags: [marketplace]
+      summary: List approved marketplace posts
+      responses:
+        "200":
+          description: Approved marketplace posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplacePost"
+    post:
+      operationId: createMarketplacePost
+      tags: [marketplace]
+      summary: Submit a marketplace post for review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplacePostInput"
+      responses:
+        "201":
+          description: Marketplace post submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplacePost"
+        "400":
+          description: Invalid post
+        "401":
+          description: Sign-in required
+  /marketplace/admin/posts:
+    get:
+      operationId: listMarketplaceAdminPosts
+      tags: [marketplace]
+      summary: List marketplace posts for moderation
+      responses:
+        "200":
+          description: All marketplace posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplacePost"
+        "403":
+          description: Owner access required
+  /marketplace/admin/posts/{id}/moderate:
+    post:
+      operationId: moderateMarketplacePost
+      tags: [marketplace]
+      summary: Change a marketplace post moderation status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationInput"
+      responses:
+        "200":
+          description: Moderated marketplace post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplacePost"
+        "404":
+          description: Post not found
+        "403":
+          description: Owner access required
+  /storage/uploads/request-url:
+    post:
+      operationId: requestMediaUploadUrl
+      tags: [storage]
+      summary: Request a presigned media upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUploadInput"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUploadResponse"
+        "400":
+          description: Invalid media metadata
+        "401":
+          description: Sign-in required
+        "500":
+          description: Unable to prepare media upload
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque bearer session token
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie
+      schema:
+        type: string
   schemas:
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+          format: email
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+      required: [id, email, firstName, lastName, profileImageUrl]
+    AuthUserEnvelope:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+      required: [user]
+    MobileTokenExchangeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+          format: uri
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+      required: [code, code_verifier, redirect_uri, state]
+    MobileTokenExchangeSuccess:
+      type: object
+      properties:
+        token:
+          type: string
+      required: [token]
+    LogoutSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+      required: [success]
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    LocationRecord:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        level:
+          type: string
+          enum: [City, Municipality, Barangay]
+        province:
+          type: string
+        region:
+          type: string
+        parent:
+          type: string
+      required: [value, label, level, province, region]
     HealthStatus:
       type: object
       properties:
@@ -33,4 +391,142 @@ components:
           type: string
       required:
         - status
+    StoredMedia:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        name:
+          type: string
+        objectPath:
+          type: ["string", "null"]
+      required: [id, url, name]
+    MarketplacePost:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        type:
+          type: string
+        location:
+          type: string
+        category:
+          type: string
+        condition:
+          type: string
+        seller:
+          type: string
+        initials:
+          type: string
+        likes:
+          type: integer
+        comments:
+          type: integer
+        shares:
+          type: integer
+        saved:
+          type: boolean
+        liked:
+          type: boolean
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoredMedia"
+        video:
+          oneOf:
+            - $ref: "#/components/schemas/StoredMedia"
+            - type: "null"
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        moderationNote:
+          type: ["string", "null"]
+      required:
+        - id
+        - title
+        - description
+        - price
+        - type
+        - location
+        - category
+        - condition
+        - seller
+        - initials
+        - likes
+        - comments
+        - shares
+        - saved
+        - liked
+        - images
+    MarketplacePostInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        price:
+          type: number
+          minimum: 0
+        type:
+          type: string
+        location:
+          type: string
+        category:
+          type: string
+        condition:
+          type: string
+        seller:
+          type: string
+        initials:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoredMedia"
+        video:
+          oneOf:
+            - $ref: "#/components/schemas/StoredMedia"
+            - type: "null"
+      required: [title, description, price, type, location, category, condition, seller, initials, images]
+    ModerationInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        note:
+          type: ["string", "null"]
+      required: [status]
+    MediaUploadInput:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+      required: [name, size, contentType]
+    MediaUploadResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required: [uploadURL, objectPath]
 

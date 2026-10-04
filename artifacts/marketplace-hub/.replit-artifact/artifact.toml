@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Media Market"
+description = "A nationwide Philippine buy-and-sell marketplace where people can discover local products, publish listings, save finds, and connect with buyers and sellers."
+version = "1.0.0"
+id = "artifacts/marketplace-hub"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23939
+
+[services.development]
+run = "pnpm --filter @workspace/marketplace-hub run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/marketplace-hub", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/marketplace-hub/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23939"
+BASE_PATH = "/"
